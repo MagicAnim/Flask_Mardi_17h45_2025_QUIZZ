@@ -1,11 +1,14 @@
 # On importe Flask du module flask
-from flask import Flask, render_template, session
+from flask import Flask, render_template, session, redirect
 
 # Importation de os
 import os
 
 # On importe la liste de dictionnaires (question + réponses) de notre fichiers questions.py
 from questions import questions
+
+# On importe les descriptions pour le resultats
+from resultats import resultats
 
 # CREATION DE l'APP
 # On crée une instance de Flask qui est donc notre app qu'on stocke dans la variable app
@@ -22,7 +25,7 @@ def index():
 # Route seconde Page
 @app.route("/question")
 def question():
-    # On accède à la variable global questions
+    # On accède à la variable globale questions
     global questions
     # On récupère le numéro de la question
     numero = session["numero_question"]
@@ -40,11 +43,33 @@ def question():
         clefs = list(questions_copy.keys())
         # On stocke l'ordre dans un cookie pour le comptage des scores
         session["clefs"] = clefs
-
+        # On affiche la question et les réponses possibles
         return render_template("question.html", question = question, reponses = reponses)
+    else :
+        # On récupère la variable globale résultats
+        global resultats
+        # On transforme nos score en liste décroissante
+        scores_tries = sorted(session["score"], key = session["score"].get, reverse = True)
+        # On récupère le nom du personnage gagnant =
+        vainqueur = scores_tries[0]
+        # On récupère la description liée au personnage
+        description = resultats[vainqueur]
+        # On affiche notre page de resultat en injectant le nom du vainqueur et la description
+        return render_template("resultats.html", vainqueur = vainqueur, description = description  )
+
+
 
 # Route permettant de compter les réponses de l'utilisateur
-# @app.route("/reponse/<numero>")
+@app.route("/reponse/<numero>")
+def reponse(numero):
+    # On incrémente numero_question pour passer à la question suivante
+    session["numero_question"] += 1
+    # On récupère le nom du vainqueur = le nom du personnage dont la réponse est associée
+    personnage = session["clefs"][int(numero)]
+    # On incrémente le score du personnage dont la réponse est associée
+    session["score"][personnage] += 1
+    # On redirige vers le route question afin d'afficher la question suivante
+    return redirect("/question")
 
 
 # EXECUTION
